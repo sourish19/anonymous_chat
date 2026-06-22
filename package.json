@@ -1,0 +1,16 @@
+{
+  "name": "anonymous_chat",
+  "module": "index.ts",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.9.3"
+  },
+  "scripts": {
+    "dev": "bun --hot ./src/index.ts"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "private": true,
+  "type": "module"
+}
