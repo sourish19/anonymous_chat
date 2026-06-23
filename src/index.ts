@@ -3,7 +3,6 @@ import { roomManager } from "./services/room_manager";
 
 import type { ServerWebSocket } from "bun";
 import type { UserData } from "./types/user_chat_data";
-import { generateUserName } from "./utils/generate_user_name";
 
 const PORT = Number(Bun.env.PORT);
 
@@ -14,7 +13,6 @@ const app = Bun.serve({
 	fetch(req, server) {
 		const url = new URL(req.url);
 		if (url.pathname == "/ws") return wsUpgradeHandler(req, server);
-		generateUserName();
 		return new Response(
 			JSON.stringify({ success: true, message: `User hit ${req.url}` }),
 		);
