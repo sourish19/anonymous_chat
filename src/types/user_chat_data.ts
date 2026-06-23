@@ -1,8 +1,8 @@
-export interface UserChatData {
+export interface UserData {
 	userId: string;
-	username: string;
 	clientId: string;
+	username: string;
 	rooms: Set<string>;
-	joinedAt: Date;
+	joinedAt: Map<string, Date>;
 	isTyping: Map<string, boolean>;
 }

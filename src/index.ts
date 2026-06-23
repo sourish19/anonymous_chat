@@ -1,31 +1,44 @@
-import { wsUpgradeHandler } from "./wsRoutes";
+import type { UserData } from "./types/user_chat_data";
+import { wsUpgradeHandler } from "./handler/upgrade_ws";
+import type { ServerWebSocket } from "bun";
+import { roomManager } from "./services/room_manager";
 
 const PORT = Number(Bun.env.PORT);
+
+const clients = new Map<string, ServerWebSocket<UserData>>();
 
 const app = Bun.serve({
 	port: PORT,
 	fetch(req, server) {
 		const url = new URL(req.url);
-
-		switch (url.pathname) {
-			case "/ping": {
-				const success = server.upgrade(req);
-				if (success) return undefined;
-				return new Response("Upgrade Failed", { status: 400 });
-			}
-			case "/pong": {
-				const success = server.upgrade(req);
-				if (success) return undefined;
-				return new Response("Upgrade Failed", { status: 400 });
-			}
-		}
+		if (url.pathname == "/ws") return wsUpgradeHandler(req, server);
+		return new Response(
+			JSON.stringify({ success: true, message: `User hit ${req.url}` }),
+		);
 	},
 	websocket: {
-		async message(ws, message) {
-			const msg = String(message);
-			console.log(msg);
-			if (msg == "ping") ws.send("pong");
+		data: {} as UserData,
+
+		open(ws) {
+			clients.set(ws.data.clientId, ws);
+
+			ws.send(
+				JSON.stringify({
+					type: "welcome",
+					clientId: ws.data.clientId,
+					username: ws.data.username,
+					message: "Welcome to annonymous chat app",
+					rooms: roomManager.getAllRooms(),
+				}),
+			);
+
+			console.log(`${ws.data.username} connected (${clients.size} total)`);
 		},
+
+		message(ws, message) {},
+
+		close(ws) {},
 	},
 });
+
 console.log(`Server is running on ${app.url}`);
