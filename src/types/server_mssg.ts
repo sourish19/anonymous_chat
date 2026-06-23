@@ -3,8 +3,10 @@ import { WsErrorCodes } from "../utils/ws_error";
 export type ServerMessage =
 	// room events
 	| { type: "room_joined"; roomId: string; memberCount: number }
+	| { type: "room_created"; roomId: string; roomName: string }
 	| { type: "room_left"; roomId: string }
-	| { type: "room_list"; rooms: string[] }
+	| { type: "room_list"; rooms: { roomId: string, roomName: string }[] }
+	| { type: "room_count"; count: number }
 	// chat events
 	| {
 			type: "chat";

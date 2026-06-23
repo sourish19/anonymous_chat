@@ -3,7 +3,7 @@ import type { UserData } from "../types/user_chat_data";
 import type { WsErrorCodes } from "./ws_error";
 import type { ServerMessage } from "../types/server_mssg";
 
-export class WsResponse {
+class WsResponse {
 	sendMssg = (ws: ServerWebSocket<UserData>, mssg: ServerMessage) => {
 		ws.send(JSON.stringify(mssg));
 	};
@@ -15,3 +15,5 @@ export class WsResponse {
 		this.sendMssg(ws, { type: "error", code, message });
 	};
 }
+
+export const wsResponse = new WsResponse();
