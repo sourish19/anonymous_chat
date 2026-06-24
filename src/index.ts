@@ -2,7 +2,7 @@ import { wsUpgradeHandler } from "./handler/upgrade_ws";
 import { roomManager } from "./services/room_manager";
 
 import type { ServerWebSocket } from "bun";
-import type { UserData } from "./types/user_chat_data";
+import type { UserData } from "./types/user_ws_data";
 
 const PORT = Number(Bun.env.PORT);
 

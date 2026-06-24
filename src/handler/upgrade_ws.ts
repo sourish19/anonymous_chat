@@ -1,15 +1,15 @@
 import { generateUserName } from "../utils/generate_user_name";
 
 import type { Server } from "bun";
-import type { UserData } from "../types/user_chat_data";
+import type { UserWsData } from "../types/user_ws_data";
 
 export const wsUpgradeHandler = async (
 	req: Request,
-	server: Server<UserData>,
+	server: Server<UserWsData>,
 ) => {
+	// TODO: can do auth check here before upgrading
 	const success = server.upgrade(req, {
 		data: {
-			userId: Bun.randomUUIDv7(),
 			username: await generateUserName(),
 			clientId: Bun.randomUUIDv7(),
 			rooms: new Set(),

@@ -3,7 +3,7 @@ import { WsErrorCodes } from "../utils/ws_error";
 import { clients } from "..";
 
 import type { ServerWebSocket } from "bun";
-import type { UserData } from "../types/user_chat_data";
+import type { UserWsData } from "../types/user_ws_data";
 import type { ServerMessage } from "../types/server_mssg";
 
 class RoomManager {
@@ -11,7 +11,7 @@ class RoomManager {
 	private roomOwners = new Map<string, string>(); // roomId,clientId
 	private roomMembers = new Map<string, Set<string>>(); // roomId, [clientId]
 
-	createRoom = (ws: ServerWebSocket<UserData>, roomName: string) => {
+	createRoom = (ws: ServerWebSocket<UserWsData>, roomName: string) => {
 		if (this.roomExistsByName(roomName)) {
 			return wsResponse.error(
 				ws,
@@ -34,7 +34,7 @@ class RoomManager {
 		return wsResponse.sendMssg(ws, { type: "room_created", roomId, roomName });
 	};
 
-	joinRoom = (ws: ServerWebSocket<UserData>, roomId: string) => {
+	joinRoom = (ws: ServerWebSocket<UserWsData>, roomId: string) => {
 		if (!this.roomExistsById(roomId)) {
 			return wsResponse.error(
 				ws,
@@ -60,7 +60,6 @@ class RoomManager {
 			JSON.stringify({
 				type: "user_joined",
 				room: this.rooms.get(roomId),
-				userId: ws.data.userId,
 				username: ws.data.username,
 				timeStamp: Date.now(),
 			}),
@@ -75,7 +74,7 @@ class RoomManager {
 		});
 	};
 
-	leaveRoom = (ws: ServerWebSocket<UserData>, roomId: string) => {
+	leaveRoom = (ws: ServerWebSocket<UserWsData>, roomId: string) => {
 		if (!this.roomExistsById(roomId)) {
 			return wsResponse.error(
 				ws,
@@ -116,9 +115,10 @@ class RoomManager {
 		return wsResponse.sendMssg(ws, { type: "room_left", roomId });
 	};
 
+	// TODO: need to implement this method
 	leaveAllRoom = () => {};
 
-	// getAllMembers = (ws: ServerWebSocket<UserData>, roomId: string) => {
+	// getAllMembers = (ws: ServerWebSocket<UserWsData>, roomId: string) => {
 	// 	if (!this.roomExistsById(roomId)) {
 	// 		wsResponse.error(
 	// 			ws,
@@ -130,7 +130,7 @@ class RoomManager {
 	// 	wsResponse.sendMssg(ws, { type: "all_users", users });
 	// };
 
-	getAllRooms = (ws: ServerWebSocket<UserData>) => {
+	getAllRooms = (ws: ServerWebSocket<UserWsData>) => {
 		const rooms = Array.from(this.rooms.entries()).map(([key, id]) => {
 			return {
 				roomId: key,
@@ -153,7 +153,7 @@ class RoomManager {
 		return exists;
 	};
 
-	deleteRoom = (ws: ServerWebSocket<UserData>, roomId: string) => {
+	deleteRoom = (ws: ServerWebSocket<UserWsData>, roomId: string) => {
 		if (!this.rooms.has(roomId)) {
 			return wsResponse.error(
 				ws,
@@ -200,23 +200,21 @@ class RoomManager {
 	getRoomCount = () => {
 		const count = this.rooms.size;
 
-		if (count == undefined) return 0;
-
 		return count;
 	};
 
-	isRoomOwner = (ws: ServerWebSocket<UserData>, roomId: string) => {
+	isRoomOwner = (ws: ServerWebSocket<UserWsData>, roomId: string) => {
 		const owner = this.roomOwners.get(roomId);
 
-		if (owner != ws.data.clientId || owner == undefined) return false;
+		if (!owner || owner != ws.data.clientId) return false;
 
 		return true;
 	};
 
-	isRoomMember = (ws: ServerWebSocket<UserData>, roomId: string) => {
+	isRoomMember = (ws: ServerWebSocket<UserWsData>, roomId: string) => {
 		const member = this.roomMembers.get(roomId);
 
-		if (member?.size == 0 || member == undefined) return false;
+		if (!member || member.size == 0) return false;
 
 		return member.has(ws.data.clientId);
 	};

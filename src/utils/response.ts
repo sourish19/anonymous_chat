@@ -1,5 +1,5 @@
 import type { ServerWebSocket } from "bun";
-import type { UserData } from "../types/user_chat_data";
+import type { UserData } from "../types/user_ws_data";
 import type { WsErrorCodes } from "./ws_error";
 import type { ServerMessage } from "../types/server_mssg";
 

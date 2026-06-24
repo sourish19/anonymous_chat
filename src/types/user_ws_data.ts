@@ -1,5 +1,4 @@
-export interface UserData {
-	userId: string;
+export interface UserWsData {
 	clientId: string;
 	username: string;
 	rooms: Set<string>;
