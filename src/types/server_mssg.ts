@@ -18,6 +18,7 @@ export type ServerMessage =
 	  }
 	| { type: "user_joined"; roomId: string; username: string }
 	| { type: "user_left"; roomId: string; username: string }
+	| { type: "all_users"; users: {userId:string, userName: string} }
 	// typing
 	| { type: "typing"; roomId: string; username: string; isTyping: boolean }
 	// system

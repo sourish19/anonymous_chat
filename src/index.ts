@@ -6,7 +6,7 @@ import type { UserData } from "./types/user_chat_data";
 
 const PORT = Number(Bun.env.PORT);
 
-const clients = new Map<string, ServerWebSocket<UserData>>();
+export const clients = new Map<string, ServerWebSocket<UserData>>(); // clientId {clientId,username,...}
 
 const app = Bun.serve({
 	port: PORT,
