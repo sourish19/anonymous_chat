@@ -5,8 +5,9 @@ export type ServerMessage =
 	| { type: "room_joined"; roomId: string; memberCount: number }
 	| { type: "room_created"; roomId: string; roomName: string }
 	| { type: "room_left"; roomId: string }
-	| { type: "room_list"; rooms: { roomId: string, roomName: string }[] }
+	| { type: "room_list"; rooms: { roomId: string; roomName: string }[] }
 	| { type: "room_count"; count: number }
+	| { type: "room_delete"; roomName: string }
 	// chat events
 	| {
 			type: "chat";
