@@ -1,10 +1,10 @@
 import { wsResponse } from "../utils/response";
 import { WsErrorCodes } from "../utils/ws_error";
-import { clients } from "..";
 
 import type { ServerWebSocket } from "bun";
 import type { UserWsData } from "../types/user_ws_data";
 import type { ServerMessage } from "../types/server_mssg";
+import { connectionManager } from "./connection_manager";
 
 class RoomManager {
 	private rooms = new Map<string, string>(); //roomId,roomName
@@ -183,7 +183,7 @@ class RoomManager {
 
 		// INFO: unsubscribing each client from room & also deleting from rooms
 		this.roomMembers.get(roomId)?.forEach((id) => {
-			const client = clients.get(id);
+			const client = connectionManager.getClient(id);
 			client?.unsubscribe(roomId);
 			client?.data.rooms.delete(roomId);
 		});

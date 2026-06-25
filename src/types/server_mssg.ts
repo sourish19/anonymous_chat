@@ -18,10 +18,10 @@ export type ServerMessage =
 	  }
 	| { type: "user_joined"; roomId: string; username: string }
 	| { type: "user_left"; roomId: string; username: string }
-	| { type: "all_users"; users: {userId:string, userName: string} }
+	| { type: "all_users"; users: { userId: string; userName: string } }
 	// typing
 	| { type: "typing"; roomId: string; username: string; isTyping: boolean }
 	// system
-	| { type: "heartbeat_ack" }
+	| { type: "PING"; timestamp: number }
 	| { type: "error"; code: WsErrorCodes; message: string }
 	| { type: "welcome"; clientId: string; username: string };

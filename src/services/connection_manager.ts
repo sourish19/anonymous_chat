@@ -1,5 +1,3 @@
-import { generateUserName } from "../utils/generate_user_name";
-
 import type { ServerWebSocket } from "bun";
 import type { UserWsData } from "../types/user_ws_data";
 import type { ServerMessage } from "../types/server_mssg";
@@ -8,14 +6,9 @@ import type { ServerMessage } from "../types/server_mssg";
 class ConnectionManager {
 	private clients = new Map<string, ServerWebSocket<UserWsData>>(); // clientId, {UserWsData}}
 
-	private generateId = () => {
-		return Bun.randomUUIDv7();
-	};
-
 	addClient = (ws: ServerWebSocket<UserWsData>) => {
-		const id = this.generateId();
-		this.clients.set(id, ws);
-		return id;
+		this.clients.set(ws.data.clientId, ws);
+		return ws.data.clientId;
 	};
 
 	getClient = (clientId: string) => {

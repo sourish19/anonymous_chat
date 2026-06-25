@@ -2,11 +2,14 @@ import { wsUpgradeHandler } from "./handler/upgrade_ws";
 import { roomManager } from "./services/room_manager";
 
 import type { ServerWebSocket } from "bun";
-import type { UserData } from "./types/user_ws_data";
+import type { UserWsData } from "./types/user_ws_data";
+import { connectionManager } from "./services/connection_manager";
+import { wsResponse } from "./utils/response";
+import { WsErrorCodes } from "./utils/ws_error";
 
 const PORT = Number(Bun.env.PORT);
 
-export const clients = new Map<string, ServerWebSocket<UserData>>(); // clientId {clientId,username,...}
+export const clients = new Map<string, ServerWebSocket<UserWsData>>(); // clientId {clientId,username,...}
 
 const app = Bun.serve({
 	port: PORT,
@@ -18,25 +21,26 @@ const app = Bun.serve({
 		);
 	},
 	websocket: {
-		data: {} as UserData,
+		data: {} as UserWsData,
 
 		open(ws) {
-			clients.set(ws.data.clientId, ws);
+			// TODO: dont know if this chair is required or  not
+			if (connectionManager.getAllClients()) {
+				return wsResponse.error(
+					ws,
+					WsErrorCodes.INVALID_PAYLOAD,
+					"Client with this id is already connected",
+				);
+			}
 
-			ws.send(
-				JSON.stringify({
-					type: "welcome",
-					clientId: ws.data.clientId,
-					username: ws.data.username,
-					message: "Welcome to annonymous chat app",
-					rooms: roomManager.getAllRooms(),
-				}),
-			);
+			connectionManager.addClient(ws);
 
-			console.log(`${ws.data.username} connected (${clients.size} total)`);
+			console.log(`${ws.data.username} connected (${connectionManager.getClientsCount()} total)`);
 		},
 
-		message(ws, message) {},
+		message(ws, message) {
+			
+		},
 
 		close(ws) {},
 	},

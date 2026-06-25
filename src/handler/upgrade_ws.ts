@@ -8,14 +8,16 @@ export const wsUpgradeHandler = async (
 	server: Server<UserWsData>,
 ) => {
 	// TODO: can do auth check here before upgrading
+	const wsData: UserWsData = {
+		username: await generateUserName(),
+		clientId: Bun.randomUUIDv7(),
+		rooms: new Set(),
+		joinedAt: new Map(),
+		isTyping: new Map(),
+	};
+
 	const success = server.upgrade(req, {
-		data: {
-			username: await generateUserName(),
-			clientId: Bun.randomUUIDv7(),
-			rooms: new Set(),
-			joinedAt: new Map(),
-			isTyping: new Map(),
-		},
+		data: wsData,
 	});
 
 	return success ? undefined : new Response("Upgrade failed", { status: 400 });
