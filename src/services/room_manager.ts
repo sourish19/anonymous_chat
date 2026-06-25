@@ -1,10 +1,10 @@
 import { wsResponse } from "../utils/response";
 import { WsErrorCodes } from "../utils/ws_error";
+import { connectionManager } from "./connection_manager";
 
 import type { ServerWebSocket } from "bun";
 import type { UserWsData } from "../types/user_ws_data";
 import type { ServerMessage } from "../types/server_mssg";
-import { connectionManager } from "./connection_manager";
 
 class RoomManager {
 	private rooms = new Map<string, string>(); //roomId,roomName
@@ -115,20 +115,56 @@ class RoomManager {
 		return wsResponse.sendMssg(ws, { type: "room_left", roomId });
 	};
 
-	// TODO: need to implement this method
-	leaveAllRoom = () => {};
+	// INFO: this is a internal method client will never hit this
+	leaveAllRooms = (ws: ServerWebSocket<UserWsData>) => {
+		const clientId = ws.data.clientId;
+		const roomIds = Array.from(ws.data.rooms);
 
-	// getAllMembers = (ws: ServerWebSocket<UserWsData>, roomId: string) => {
-	// 	if (!this.roomExistsById(roomId)) {
-	// 		wsResponse.error(
-	// 			ws,
-	// 			WsErrorCodes.ROOM_EXISTS,
-	// 			`Room with ${roomId} dosen't exists `,
-	// 		);
-	// 	}
+		if (!roomIds || roomIds.length == 0) {
+			connectionManager.removeClient(clientId);
+			return;
+		}
 
-	// 	wsResponse.sendMssg(ws, { type: "all_users", users });
-	// };
+		for (const id of roomIds) {
+			if (this.isRoomOwner(ws, id)) {
+				this.deleteRoom(ws, id);
+			} else {
+				this.leaveRoom(ws, id);
+			}
+		}
+
+		connectionManager.removeClient(clientId);
+		return;
+	};
+
+	getAllMembersOfRoom = (ws: ServerWebSocket<UserWsData>, roomId: string) => {
+		if (!this.roomExistsById(roomId)) {
+			return wsResponse.error(
+				ws,
+				WsErrorCodes.ROOM_EXISTS,
+				`Room with ${roomId} dosen't exists `,
+			);
+		}
+
+		const clients = this.roomMembers.get(roomId);
+
+		if (!clients || clients?.size == 0) {
+			return wsResponse.error(
+				ws,
+				WsErrorCodes.MEMBERS_NOT_FOUND,
+				`No member is connected inr ${roomId}`,
+			);
+		}
+
+		const users = Array.from(clients).map((val) => {
+			return {
+				clientId: val,
+				userName: connectionManager.getClient(val)?.data.username!,
+			};
+		});
+
+		wsResponse.sendMssg(ws, { type: "all_users", users });
+	};
 
 	getAllRooms = (ws: ServerWebSocket<UserWsData>) => {
 		const rooms = Array.from(this.rooms.entries()).map(([key, id]) => {
@@ -221,3 +257,22 @@ class RoomManager {
 }
 
 export const roomManager = new RoomManager();
+
+/*
+	sends req to leaveAllRooms
+
+	check if the user is connected to any room
+
+	not connected -> call connectionManager.removeCLient & bunch of other cleanup functions
+
+	get all the roomIds
+
+	loop through each rooms which has same roomId
+
+	do the roomOwner check
+
+	if user is a member then just call .leaveRoom()
+
+	if user is owner just call .deleteRoom()
+
+*/

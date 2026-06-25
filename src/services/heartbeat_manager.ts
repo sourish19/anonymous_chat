@@ -1,5 +1,5 @@
 import { connectionManager } from "./connection_manager";
-import { roomManager } from "../../roommanager";
+import { roomManager } from "./room_manager";
 
 import type { ServerWebSocket } from "bun";
 import type { UserWsData } from "../types/user_ws_data";
