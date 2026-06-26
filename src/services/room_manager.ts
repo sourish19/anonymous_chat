@@ -55,6 +55,10 @@ class RoomManager {
 
 		ws.subscribe(roomId);
 
+		const members = this.roomMembers.get(roomId);
+
+		members?.add(ws.data.clientId);
+
 		ws.publish(
 			roomId,
 			JSON.stringify({
@@ -65,12 +69,10 @@ class RoomManager {
 			}),
 		);
 
-		this.roomMembers.get(roomId)?.add(ws.data.clientId);
-
 		return wsResponse.sendMssg(ws, {
 			type: "room_joined",
 			roomId,
-			memberCount: this.roomMembers.get(roomId)?.size!,
+			memberCount: members?.size!,
 		});
 	};
 
@@ -100,6 +102,10 @@ class RoomManager {
 		// INFO: delete a particular client from room members
 		members?.delete(ws.data.clientId);
 
+		ws.unsubscribe(roomId);
+
+		ws.data.rooms.delete(roomId);
+
 		const response: ServerMessage = {
 			type: "user_left",
 			roomId,
@@ -108,10 +114,6 @@ class RoomManager {
 
 		ws.publish(roomId, JSON.stringify(response));
 
-		ws.unsubscribe(roomId);
-
-		ws.data.rooms.delete(roomId);
-
 		return wsResponse.sendMssg(ws, { type: "room_left", roomId });
 	};
 
@@ -119,11 +121,6 @@ class RoomManager {
 	leaveAllRooms = (ws: ServerWebSocket<UserWsData>) => {
 		const clientId = ws.data.clientId;
 		const roomIds = Array.from(ws.data.rooms);
-
-		if (!roomIds || roomIds.length == 0) {
-			connectionManager.removeClient(clientId);
-			return;
-		}
 
 		for (const id of roomIds) {
 			if (this.isRoomOwner(ws, id)) {
@@ -141,7 +138,7 @@ class RoomManager {
 		if (!this.roomExistsById(roomId)) {
 			return wsResponse.error(
 				ws,
-				WsErrorCodes.ROOM_EXISTS,
+				WsErrorCodes.ROOM_NOT_FOUND,
 				`Room with ${roomId} dosen't exists `,
 			);
 		}
@@ -152,7 +149,7 @@ class RoomManager {
 			return wsResponse.error(
 				ws,
 				WsErrorCodes.MEMBERS_NOT_FOUND,
-				`No member is connected inr ${roomId}`,
+				`No member is connected in ${roomId}`,
 			);
 		}
 
@@ -167,26 +164,16 @@ class RoomManager {
 	};
 
 	getAllRooms = (ws: ServerWebSocket<UserWsData>) => {
-		const rooms = Array.from(this.rooms.entries()).map(([key, id]) => {
-			return {
+		const rooms: { roomId: string; roomName: string }[] = [];
+
+		for (const [key, val] of this.rooms.entries()) {
+			rooms.push({
 				roomId: key,
-				roomName: id,
-			};
-		});
+				roomName: val,
+			});
+		}
 
-		wsResponse.sendMssg(ws, { type: "room_list", rooms });
-	};
-
-	roomExistsByName = (roomName: string) => {
-		const exists = Array.from(this.rooms.values()).includes(roomName);
-
-		return exists;
-	};
-
-	roomExistsById = (roomId: string) => {
-		const exists = this.rooms.has(roomId);
-
-		return exists;
+		return wsResponse.sendMssg(ws, { type: "room_list", rooms });
 	};
 
 	deleteRoom = (ws: ServerWebSocket<UserWsData>, roomId: string) => {
@@ -215,10 +202,12 @@ class RoomManager {
 
 		ws.publish(roomId, JSON.stringify(response));
 
-		ws.data.rooms.delete(roomId);
+		// ws.data.rooms.delete(roomId); // in the below loop all the clients gets deleted from the rooms
+
+		const roomMembers = this.roomMembers;
 
 		// INFO: unsubscribing each client from room & also deleting from rooms
-		this.roomMembers.get(roomId)?.forEach((id) => {
+		roomMembers.get(roomId)?.forEach((id) => {
 			const client = connectionManager.getClient(id);
 			client?.unsubscribe(roomId);
 			client?.data.rooms.delete(roomId);
@@ -226,12 +215,30 @@ class RoomManager {
 
 		this.rooms.delete(roomId);
 		this.roomOwners.delete(roomId);
-		this.roomMembers.delete(roomId);
+		roomMembers.delete(roomId);
 
 		return wsResponse.sendMssg(ws, { type: "room_delete", roomName });
 	};
 
 	// INFO: *************** Utilities methods ***************
+
+	roomExistsByName = (roomName: string) => {
+		for (const val of this.rooms.values()) {
+			if (val === roomName) {
+				return true;
+			}
+		}
+
+		// const exists = this.rooms.values().toArray().includes(roomName);
+
+		return false;
+	};
+
+	roomExistsById = (roomId: string) => {
+		const exists = this.rooms.has(roomId);
+
+		return exists;
+	};
 
 	getRoomCount = () => {
 		const count = this.rooms.size;
@@ -257,22 +264,3 @@ class RoomManager {
 }
 
 export const roomManager = new RoomManager();
-
-/*
-	sends req to leaveAllRooms
-
-	check if the user is connected to any room
-
-	not connected -> call connectionManager.removeCLient & bunch of other cleanup functions
-
-	get all the roomIds
-
-	loop through each rooms which has same roomId
-
-	do the roomOwner check
-
-	if user is a member then just call .leaveRoom()
-
-	if user is owner just call .deleteRoom()
-
-*/
